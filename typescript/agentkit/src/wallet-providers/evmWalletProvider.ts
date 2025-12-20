@@ -33,6 +33,9 @@ export abstract class EvmWalletProvider extends WalletProvider {
         return this.signTransaction(transaction as TransactionRequest);
       },
       signTypedData: async typedData => {
+        if (!typedData.domain || !typedData.types || !typedData.primaryType || !typedData.message) {
+          throw new Error("Invalid typed data: missing required fields");
+        }
         return this.signTypedData({
           domain: typedData.domain as Record<string, unknown>,
           types: typedData.types as Record<string, Array<{ name: string; type: string }>>,
