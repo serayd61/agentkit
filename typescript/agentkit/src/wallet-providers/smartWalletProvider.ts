@@ -21,6 +21,7 @@ import {
   ReadContractReturnType,
   TransactionRequest,
   PublicClient as ViemPublicClient,
+  TransactionReceipt,
 } from "viem";
 import { Network, NETWORK_ID_TO_CHAIN_ID, NETWORK_ID_TO_VIEM_CHAIN } from "../network";
 import { EvmWalletProvider } from "./evmWalletProvider";
@@ -164,11 +165,15 @@ export class SmartWalletProvider extends EvmWalletProvider {
    *
    * @throws as signing typed data is not implemented for SmartWallets.
    *
-   * @param _ - The typed data object to sign.
+   * @param _typedData - The typed data object to sign.
    * @returns The signed typed data object.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async signTypedData(_: any): Promise<Hex> {
+  async signTypedData(_typedData: {
+    domain: Record<string, unknown>;
+    types: Record<string, Array<{ name: string; type: string }>>;
+    primaryType: string;
+    message: Record<string, unknown>;
+  }): Promise<Hex> {
     throw new Error("Not implemented");
   }
 
@@ -311,8 +316,7 @@ export class SmartWalletProvider extends EvmWalletProvider {
    * @param txHash - The hash of the transaction to wait for.
    * @returns The transaction receipt.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  waitForTransactionReceipt(txHash: Hex): Promise<any> {
+  waitForTransactionReceipt(txHash: Hex): Promise<TransactionReceipt> {
     return this.#publicClient.waitForTransactionReceipt({
       hash: txHash,
     });

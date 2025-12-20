@@ -17,6 +17,7 @@ import {
   Address,
   Hex,
   hashMessage,
+  TransactionReceipt,
 } from "viem";
 import { EvmWalletProvider } from "./evmWalletProvider";
 import { Network } from "../network";
@@ -220,18 +221,26 @@ export class CdpWalletProvider extends EvmWalletProvider {
    * Signs a typed data object.
    *
    * @param typedData - The typed data object to sign.
+   * @param typedData.domain - The domain object containing contract and chain information.
+   * @param typedData.types - The type definitions for the structured data.
+   * @param typedData.primaryType - The primary type being signed.
+   * @param typedData.message - The actual data to sign.
    * @returns The signed typed data object.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async signTypedData(typedData: any): Promise<`0x${string}`> {
+  async signTypedData(typedData: {
+    domain: Record<string, unknown>;
+    types: Record<string, Array<{ name: string; type: string }>>;
+    primaryType: string;
+    message: Record<string, unknown>;
+  }): Promise<`0x${string}`> {
     if (!this.#cdpWallet) {
       throw new Error("Wallet not initialized");
     }
 
     const messageHash = hashTypedDataMessage(
-      typedData.domain!,
-      typedData.types!,
-      typedData.message!,
+      typedData.domain,
+      typedData.types,
+      typedData.message,
     );
 
     const payload = await this.#cdpWallet.createPayloadSignature(messageHash);
@@ -430,8 +439,7 @@ export class CdpWalletProvider extends EvmWalletProvider {
    * @param txHash - The hash of the transaction to wait for.
    * @returns The transaction receipt.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async waitForTransactionReceipt(txHash: `0x${string}`): Promise<any> {
+  async waitForTransactionReceipt(txHash: `0x${string}`): Promise<TransactionReceipt> {
     return await this.#publicClient!.waitForTransactionReceipt({ hash: txHash });
   }
 

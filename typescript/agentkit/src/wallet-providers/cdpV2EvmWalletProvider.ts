@@ -13,6 +13,7 @@ import {
   serializeTransaction,
   TransactionRequest,
   TransactionSerializable,
+  TransactionReceipt,
 } from "viem";
 import { Network, NETWORK_ID_TO_CHAIN_ID, NETWORK_ID_TO_VIEM_CHAIN } from "../network";
 import { EvmWalletProvider } from "./evmWalletProvider";
@@ -128,11 +129,19 @@ export class CdpV2EvmWalletProvider extends EvmWalletProvider implements WalletP
    * Signs a typed data object.
    *
    * @param typedData - The typed data object to sign.
+   * @param typedData.domain - The domain object containing contract and chain information.
+   * @param typedData.types - The type definitions for the structured data.
+   * @param typedData.primaryType - The primary type being signed.
+   * @param typedData.message - The actual data to sign.
    * @returns The signed typed data object.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async signTypedData(typedData: any): Promise<Hex> {
-    return this.#serverAccount.signTypedData(typedData);
+  async signTypedData(typedData: {
+    domain: Record<string, unknown>;
+    types: Record<string, Array<{ name: string; type: string }>>;
+    primaryType: string;
+    message: Record<string, unknown>;
+  }): Promise<Hex> {
+    return this.#serverAccount.signTypedData(typedData as Parameters<typeof this.#serverAccount.signTypedData>[0]);
   }
 
   /**
@@ -238,8 +247,7 @@ export class CdpV2EvmWalletProvider extends EvmWalletProvider implements WalletP
    * @param txHash - The hash of the transaction to wait for.
    * @returns The transaction receipt.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async waitForTransactionReceipt(txHash: Hex): Promise<any> {
+  async waitForTransactionReceipt(txHash: Hex): Promise<TransactionReceipt> {
     return await this.#publicClient.waitForTransactionReceipt({ hash: txHash });
   }
 

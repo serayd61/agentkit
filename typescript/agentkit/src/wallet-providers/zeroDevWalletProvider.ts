@@ -23,6 +23,7 @@ import {
   zeroAddress,
   Hash,
   Account,
+  TransactionReceipt,
 } from "viem";
 import { SmartAccount } from "viem/account-abstraction";
 import { EvmWalletProvider } from "./evmWalletProvider";
@@ -185,11 +186,19 @@ export class ZeroDevWalletProvider extends EvmWalletProvider {
    * Signs a typed data object using the Kernel account.
    *
    * @param typedData - The typed data object to sign.
+   * @param typedData.domain - The domain object containing contract and chain information.
+   * @param typedData.types - The type definitions for the structured data.
+   * @param typedData.primaryType - The primary type being signed.
+   * @param typedData.message - The actual data to sign.
    * @returns The signed typed data object.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async signTypedData(typedData: any): Promise<Hex> {
-    return this.#kernelAccount.signTypedData(typedData);
+  async signTypedData(typedData: {
+    domain: Record<string, unknown>;
+    types: Record<string, Array<{ name: string; type: string }>>;
+    primaryType: string;
+    message: Record<string, unknown>;
+  }): Promise<Hex> {
+    return this.#kernelAccount.signTypedData(typedData as Parameters<typeof this.#kernelAccount.signTypedData>[0]);
   }
 
   /**
@@ -268,7 +277,7 @@ export class ZeroDevWalletProvider extends EvmWalletProvider {
    * @param txHash - The hash of the transaction to wait for.
    * @returns The transaction receipt.
    */
-  async waitForTransactionReceipt(txHash: Hash): Promise<unknown> {
+  async waitForTransactionReceipt(txHash: Hash): Promise<TransactionReceipt> {
     return this.#publicClient.waitForTransactionReceipt({ hash: txHash });
   }
 

@@ -1,6 +1,3 @@
-// TODO: Improve type safety
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import {
   WalletClient as ViemWalletClient,
   createPublicClient,
@@ -13,6 +10,7 @@ import {
   Abi,
   ContractFunctionName,
   ContractFunctionArgs,
+  TransactionReceipt,
 } from "viem";
 import { EvmWalletProvider } from "./evmWalletProvider";
 import { Network } from "../network";
@@ -77,18 +75,32 @@ export class ViemWalletProvider extends EvmWalletProvider {
   }
 
   /**
-   * Signs a typed data object.
+   * Signs a typed data object according to EIP-712.
    *
    * @param typedData - The typed data object to sign.
+   * @param typedData.domain - The domain object containing contract and chain information.
+   * @param typedData.types - The type definitions for the structured data.
+   * @param typedData.primaryType - The primary type being signed.
+   * @param typedData.message - The actual data to sign.
    * @returns The signed typed data object.
    */
-  async signTypedData(typedData: any): Promise<`0x${string}`> {
+  async signTypedData(typedData: {
+    domain: Record<string, unknown>;
+    types: Record<string, Array<{ name: string; type: string }>>;
+    primaryType: string;
+    message: Record<string, unknown>;
+  }): Promise<`0x${string}`> {
+    const account = this.#walletClient.account;
+    if (!account) {
+      throw new Error("Account not found");
+    }
+
     return this.#walletClient.signTypedData({
-      account: this.#walletClient.account!,
-      domain: typedData.domain!,
-      types: typedData.types!,
-      primaryType: typedData.primaryType!,
-      message: typedData.message!,
+      account,
+      domain: typedData.domain,
+      types: typedData.types,
+      primaryType: typedData.primaryType,
+      message: typedData.message,
     });
   }
 
@@ -207,7 +219,7 @@ export class ViemWalletProvider extends EvmWalletProvider {
    * @param txHash - The hash of the transaction to wait for.
    * @returns The transaction receipt.
    */
-  async waitForTransactionReceipt(txHash: `0x${string}`): Promise<any> {
+  async waitForTransactionReceipt(txHash: `0x${string}`): Promise<TransactionReceipt> {
     return await this.#publicClient.waitForTransactionReceipt({ hash: txHash });
   }
 
@@ -243,10 +255,6 @@ export class ViemWalletProvider extends EvmWalletProvider {
     });
 
     const receipt = await this.waitForTransactionReceipt(tx);
-
-    if (!receipt) {
-      throw new Error("Transaction failed");
-    }
 
     return receipt.transactionHash;
   }

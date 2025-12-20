@@ -1,6 +1,3 @@
-// TODO: Improve type safety
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { toAccount } from "viem/accounts";
 import { WalletProvider } from "./walletProvider";
 import {
@@ -12,6 +9,7 @@ import {
   ContractFunctionArgs,
   Address,
   Account,
+  TransactionReceipt,
 } from "viem";
 
 /**
@@ -35,7 +33,12 @@ export abstract class EvmWalletProvider extends WalletProvider {
         return this.signTransaction(transaction as TransactionRequest);
       },
       signTypedData: async typedData => {
-        return this.signTypedData(typedData);
+        return this.signTypedData({
+          domain: typedData.domain as Record<string, unknown>,
+          types: typedData.types as Record<string, Array<{ name: string; type: string }>>,
+          primaryType: typedData.primaryType,
+          message: typedData.message as Record<string, unknown>,
+        });
       },
     });
   }
@@ -49,12 +52,21 @@ export abstract class EvmWalletProvider extends WalletProvider {
   abstract signMessage(message: string | Uint8Array): Promise<`0x${string}`>;
 
   /**
-   * Sign a typed data.
+   * Sign typed data according to EIP-712.
    *
    * @param typedData - The typed data to sign.
+   * @param typedData.domain - The domain object containing contract and chain information.
+   * @param typedData.types - The type definitions for the structured data.
+   * @param typedData.primaryType - The primary type being signed.
+   * @param typedData.message - The actual data to sign.
    * @returns The signed typed data.
    */
-  abstract signTypedData(typedData: any): Promise<`0x${string}`>;
+  abstract signTypedData(typedData: {
+    domain: Record<string, unknown>;
+    types: Record<string, Array<{ name: string; type: string }>>;
+    primaryType: string;
+    message: Record<string, unknown>;
+  }): Promise<`0x${string}`>;
 
   /**
    * Sign a transaction.
@@ -78,7 +90,7 @@ export abstract class EvmWalletProvider extends WalletProvider {
    * @param txHash - The transaction hash.
    * @returns The transaction receipt.
    */
-  abstract waitForTransactionReceipt(txHash: `0x${string}`): Promise<any>;
+  abstract waitForTransactionReceipt(txHash: `0x${string}`): Promise<TransactionReceipt>;
 
   /**
    * Read a contract.
